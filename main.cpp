@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
      */ 
     // unsigned nb_threads_hint = std::thread::hardware_concurrency();
     // unsigned nb_threads = nb_threads_hint ? 16 : (nb_threads_hint);
-    // std::vector< std::thread > my_threads(nb_threads);
+    // std::vector<std::thread> my_threads(nb_threads);
 
     // unsigned batch_size = nb_elements / nb_threads;
     // unsigned batch_remainder = nb_elements % nb_threads;
@@ -37,16 +37,18 @@ int main(int argc, char *argv[]) {
                 return v;
             }, kernel);
 
-    // for_tensor([](auto v) {
-    //             cout << v << endl;
-    //         }, kernel);
+    /**
+     * Print filter.txt input
+     */
+    /* for_tensor([](auto v) {
+                cout << v << endl;
+            }, kernel); */
 
     std::vector<filter*> filters;
-
     array<unsigned int, 3> rgb = {0, 1, 2};
     for_each(std::execution::par, rgb.begin(), rgb.end(),
         [w_size, bias, kernel, &filters](auto idx) {
-            // make edge detector for color idx 
+            // make edge detector for color idx
             tensor ed(w_size, matrix(w_size, v(3)));
 
             for (int i = 0; i < w_size; ++i) {
@@ -54,20 +56,10 @@ int main(int argc, char *argv[]) {
                     ed[i][j][idx] = kernel[i][j];
                 }
             }
-            // std::unique_ptr<filter> f(new filter(ed, w_size, 3, bias));
-
-            // filter f(ed, w_size, 3, bias);
-            // f.normalize();
-            // filters.at(idx) = f;
             filter *f = new filter(ed, w_size, 3, bias);
             f->normalize();
             filters.push_back(f);
         });
-
-        // cout << "test" << endl;
-        // for_each(filters.begin(), filters.end(), [](auto v) {
-        //     cout << v.b << endl;
-        // });
 
     if (argc < 3) {
         cerr << "usage <input_data file name> <output file name>" << endl;
@@ -95,7 +87,6 @@ int main(int argc, char *argv[]) {
                                 padding, filters.size()); 
     tensor input(width, matrix(height, v(depth)));
 
-
     for (int id = 0; id < num_images; ++id) {
 
         // read one image
@@ -108,12 +99,6 @@ int main(int argc, char *argv[]) {
                 }
             }
         }
-        // trans_matrix([ifile](auto v) -> auto {
-        //     ifile >> v;
-        //     if (ifile.peek() == ',')
-        //         ifile.ignore();
-        //     return v;
-        // }, kernel);
 
         auto output = clayer.conv2d(input, filters);
         int o_width = get<0>(output), o_height = 

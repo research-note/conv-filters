@@ -38,11 +38,6 @@ T trans_matrix(F f, T &m) {
     return m;
 }
 
-template <typename T>
-auto sum(T t) {
-    return reduce(std::execution::par, t.begin(), t.end());
-}
-
 template <typename F, typename T>
 T for_tensor(F f, T t) {
     for_each(std::execution::par, 
@@ -66,6 +61,11 @@ T trans_tensor(F f, T &t) {
         });
 
     return t;
+}
+
+template <typename T>
+auto sum(T t) {
+    return reduce(std::execution::par, t.begin(), t.end());
 }
 
 // allocate memory for a tensor
@@ -108,21 +108,21 @@ public:
     void normalize() {
         double sum = 0;
 
-        for (int i = 0; i < window; ++i) {
-            for (int j = 0; j < window; ++j) {
-                for (int k = 0; k < depth; ++k) {
-                    sum += std::abs(w[i][j][k]);
-                }
-            }
-        }
+        for_each(std::execution::par_unseq, w.begin(), w.end(), [&sum](auto m){
+            for_each(std::execution::par_unseq, m.begin(), m.end(), [&sum](auto v){
+                for_each(std::execution::par_unseq, v.begin(), v.end(), [&sum](auto v){
+                    sum += std::abs(v);
+                });
+            });
+        });
 
-        for (int i = 0; i < window; ++i) {
-            for (int j = 0; j < window; ++j) {
-                for (int k = 0; k < depth; ++k) {
-                    w[i][j][k] /= sum;
-                }
-            }
-        }
+        for_each(std::execution::par_unseq, w.begin(), w.end(), [sum](auto m){
+            for_each(std::execution::par_unseq, m.begin(), m.end(), [sum](auto v){
+                for_each(std::execution::par_unseq, v.begin(), v.end(), [sum](auto v){
+                    v /= sum;
+                });
+            });
+        });
     }
 
 };
